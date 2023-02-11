@@ -1,2 +1,2 @@
 # Convex
-基于C++的简易语言Convex编译器
+基于 Rust 的简单语言 Convex
