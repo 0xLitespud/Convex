@@ -1,0 +1,58 @@
+use crate::ast::*;
+
+grammar;
+
+// 跳过空白和注释
+match {
+    r"\s*" => {},
+    r"//[^\n\r]*[\n\r]*" => {},
+    _
+}
+
+// CompUnit
+pub CompUnit: CompUnit = <func_def: FuncDef> => CompUnit { <> };
+
+// 定义函数
+FuncDef: FuncDef = {
+    "func" <func_type: Type> <id: Ident> "(" ")" <block: Block> => {
+        FuncDef { <> }
+    }
+}
+
+// 函数返回类型
+Type: Type = "int" => Type::Int;
+
+// 函数语句块
+Block: Block = "{" <stmt: Stmt> "}" => Block { <> };
+
+// 语句
+Stmt: Stmt = "return" <exp: Exp> ";" => Stmt { <> };
+
+// 表达式
+Exp: Exp = <ue: UnaryExp> => Exp { <> };
+
+// 主要表达式
+PrimaryExp: PrimaryExp = {
+    "(" <Exp> ")" => PrimaryExp::Exp(Box::new(<>)),
+    Number => PrimaryExp::Number(<>)
+}
+
+UnaryExp: UnaryExp = {
+    PrimaryExp => UnaryExp::Primary(<>),
+    <op: UnaryOp> <exp: UnaryExp> => UnaryExp::Unary(op, Box::new(exp))
+}
+
+UnaryOp: UnaryOp = {
+    "-" => UnaryOp::Neg,
+    "!" => UnaryOp::LNot
+}
+
+// 数字
+Number: i32 = {
+    r"[1-9][0-9]*" => i32::from_str_radix(<>, 10).unwrap(), // 十进制
+    r"0[0-7]*" => i32::from_str_radix(<>, 8).unwrap(), // 八进制
+    r"0[xX][0-9a-fA-F]+" => i32::from_str_radix(&<>[2..], 16).unwrap(), // 十六进制
+}
+
+// 如果匹配到标识符, 就返回这个字符串
+Ident: String = r"[_a-zA-Z][_a-zA-Z0-9]*" => <>.to_string();
